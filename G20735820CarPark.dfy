@@ -1,57 +1,76 @@
-class CarPark{
-    var capacity : int; //total capacity car park can take
-    var currentSize : int; //current size of the car park 
-    var takenSpaces : set<int>; //the car park, will fill up with ids of car
-    
-    constructor(cap : int)
-    requires cap > 0;
-    ensures capacity == cap && currentSize == 0;
-    ensures currentSize < capacity;
+class {:autocontracts} CarPark{
+    const capacity : int; //total capacity car park can take
+    var urArea : set<int>; //the car park, will fill up with ids of car
+    var rArea : set<int>;
+    var arbitraryVal : int;
+    constructor()
+    ensures urArea == {}
+    ensures rArea == {}
     ensures capacity > 0;
     {
-        capacity := cap;
-        currentSize := 0;
-        takenSpaces := {};
+        capacity := 20;
+        rArea := {};
+        urArea := {};
+    }
+
+    predicate Valid()
+    reads this
+    {
+        (|urArea| <= capacity) //- minSpaces)
     }
 
     method EnterCarPark(carId : int)
+    requires |urArea| < capacity; //- minSpaces;
+    //requires Valid();
     modifies this
+    //ensures Valid();
+    ensures urArea == old(urArea) + {carId}
     {
         //if the amount of cars is less than capacity then insert the car
-        if(currentSize < capacity){
-            currentSize := currentSize + 1;
-            takenSpaces := takenSpaces + {carId};
-        }else{
-            print "car park full";
-        }
+        urArea := urArea + {carId};
     }
 
-    method LeaveCarPark() returns (leavingCarId : int)
+    /*method LeaveCarPark(carId : int)
     modifies this
     {
-        //if the car park is empty print otherwise remove the car
-        if(|takenSpaces| == 0){
-            print "Car park empty";
-        }else{
-            leavingCarId :| leavingCarId in takenSpaces;
-            takenSpaces := takenSpaces - {leavingCarId};
-            currentSize := currentSize - 1;
-        }
+        urArea := urArea - {carId};
+    }*/
+
+    method LeaveCarPark()
+    requires |urArea| > 0
+    modifies this
+    ensures |urArea| == |old(urArea)| - 1
+    {
+        var leavingCarId : int; //need to make a local var as dafny assume clause only supports local var currently
+        leavingCarId :| leavingCarId in urArea; // taken from lecture 17 finds arbitrary value in the set to remove
+        urArea := urArea - {leavingCarId}; //remove the arbitrary value from the set
     }
 }
 
 method Main(){
-    var cp := new CarPark(5);
+    var cp := new CarPark();
 
-
+    print cp.urArea;
     cp.EnterCarPark(1);
     cp.EnterCarPark(2);
+    cp.EnterCarPark(3);
+    print cp.urArea;
 
-    print cp.takenSpaces;
+    cp.LeaveCarPark();
+    cp.LeaveCarPark();
+    cp.LeaveCarPark();
+    
+    print cp.urArea;
 
 
-    var leftCar : int;
-    leftCar := cp.LeaveCarPark();
+    cp.EnterCarPark(4);
+    cp.EnterCarPark(5);
+    cp.EnterCarPark(6);
+    print cp.urArea;
 
-    print cp.takenSpaces;
+    cp.LeaveCarPark();
+    cp.LeaveCarPark();
+    cp.LeaveCarPark();
+    //cp.LeaveCarPark(2);
+    print cp.urArea;
 }
