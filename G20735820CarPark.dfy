@@ -1,3 +1,9 @@
+/*
+
+G20735820 CarPark class for Dafny Assignment 2
+
+*/
+
 //using autocontracts so that Valid predicate is added to pre and post conditions
 class {:autocontracts} CarPark{
     const capacity : int := 10; //capacity of non-reserved car park
