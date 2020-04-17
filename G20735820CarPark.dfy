@@ -1,14 +1,15 @@
+//using autocontracts so that Valid predicate is added to pre and post conditions
 class {:autocontracts} CarPark{
-    const capacity : int := 10; //total capacity car park can take
-    const rCapacity : int := 10;
-    const weekendCapacity : int := 20;
-    var urArea : set<int>; //the car park, will fill up with ids of car
-    var rArea : set<int>;
-    var subs: set<int>;
-    const fullSpaceMargin: int := 5; //car park considered full when 5 spaces left
-    var isWeekend: bool;
-    constructor()
-    ensures urArea == {}
+    const capacity : int := 10; //capacity of non-reserved car park
+    const rCapacity : int := 10; //capacity of reserved car park
+    const weekendCapacity : int := 20; //total cap of carpark as on weekend all spaces are available as non-reserved
+    var urArea : set<int>; //non-reserved car park represented as a set so there are no duplicates
+    var rArea : set<int>; // reserved car park also a set so no duplicates
+    var subs: set<int>; //set to hold the car id when making reservation 
+    const fullSpaceMargin: int := 5; //non-reserved car park considered full when 5 spaces left
+    var isWeekend: bool; //will determine if it is a weekend day or not as car park behaves different on weekend
+    constructor() //constructor sets car park up for a new day
+    ensures urArea == {} //ensuring that 
     ensures rArea == {}
     ensures subs == {}
     ensures capacity > 0;
@@ -25,7 +26,7 @@ class {:autocontracts} CarPark{
     predicate Valid()
     reads this
     {
-        (|urArea| <= capacity) && (|rArea| <= capacity) //- minSpaces)
+        (|urArea| <= capacity - fullSpaceMargin) && (|rArea| <= capacity)
     }
 
     method EnterCarPark(carId : int)
@@ -34,13 +35,15 @@ class {:autocontracts} CarPark{
     ensures urArea == old(urArea) + {carId}
     ensures rArea == old(rArea)
     ensures subs == old(subs)
+    ensures |urArea| > 0
+    ensures isWeekend == old(isWeekend)
     {
         //if the amount of cars is less than capacity then insert the car
         urArea := urArea + {carId};
     }
 
     method LeaveCarPark(carId : int)
-    requires |urArea| > 0
+    requires |urArea| > 0 || |rArea| > 0
     requires carId in urArea || carId in rArea
     modifies `urArea, `rArea
     ensures urArea == old(urArea) - {carId}
@@ -92,6 +95,7 @@ class {:autocontracts} CarPark{
     ensures rArea == old(rArea) + {carId}
     ensures subs == old(subs)
     ensures isWeekend == old(isWeekend)
+    ensures |rArea| > 0
     {
         rArea := rArea + {carId};
     }
@@ -118,8 +122,14 @@ class {:autocontracts} CarPark{
     }
 
     method CloseCarPark()
+    modifies this
+    ensures rArea == {}
+    ensures urArea == {};
+    ensures isWeekend == false; 
     {
-
+        urArea := {};
+        rArea := {};
+        isWeekend := false;
     }
 
     method PrintParkingPlan()
@@ -175,15 +185,18 @@ method Main(){
     cp.MakeSubscription(8);
     cp.EnterReserve(8);
     
-    
+    //cp.CloseCarPark();
 
     /* WEEKDAY IS FINISHED */
 
     /* TESTING WEEKEND */
+    cp := new CarPark();
 
     print "\n\nWEEKEND PARKING\n\n";
 
     cp.OpenReservedArea();
+    cp.EnterCarPark(15);
+
     cp.EnterReserve(2);
     cp.EnterReserve(3);
     cp.EnterReserve(4);
